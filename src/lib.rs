@@ -55,6 +55,54 @@ pub struct GUID {
     data: [u8; 16],
 }
 
+impl From<Guid> for GUID {
+    fn from(item: Guid) -> Self {
+        GUID::build_from_components(item.a, item.b, item.c, &item.d)
+    }
+}
+
+impl From<GUID> for Guid {
+    fn from(item: GUID) -> Self {
+        Guid {
+            a: item.data1(),
+            b: item.data2(),
+            c: item.data3(),
+            d: item.data4(),
+        }
+    }
+}
+
+impl fmt::Display for Guid {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{:08X}-{:04X}-{:04X}-{:04X}-{:08X}{:04X}",
+            self.a,
+            self.b,
+            self.c,
+            u16::from_be_bytes(self.d[0..2].try_into().unwrap()),
+            u32::from_be_bytes(self.d[2..6].try_into().unwrap()),
+            u16::from_be_bytes(self.d[6..8].try_into().unwrap()),
+        )
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default, Hash)]
+#[repr(C)]
+pub struct Guid {
+    /// The low field of the timestamp.
+    a: u32,
+    /// The middle field of the timestamp.
+    b: u16,
+    /// The high field of the timestamp multiplexed with the version number.
+    c: u16,
+    /// Contains, in this order:
+    /// - The high field of the clock sequence multiplexed with the variant.
+    /// - The low field of the clock sequence.
+    /// - The spatially unique node identifier.
+    d: [u8; 8],
+}
+
 impl GUID {
     /// Construct a `GUID` from components.
     ///
@@ -77,13 +125,11 @@ impl GUID {
         let d2 = d2.to_be_bytes();
         let d3 = d3.to_be_bytes();
         let data = [
-            d1[0], d1[1], d1[2], d1[3],
-            d2[0], d2[1],
-            d3[0], d3[1],
-            d4[0], d4[1], d4[2], d4[3], d4[4], d4[5], d4[6], d4[7],
+            d1[0], d1[1], d1[2], d1[3], d2[0], d2[1], d3[0], d3[1], d4[0], d4[1], d4[2], d4[3],
+            d4[4], d4[5], d4[6], d4[7],
         ];
 
-        GUID{ data }
+        GUID { data }
     }
 
     /// Construct a `GUID` from 16 bytes.
